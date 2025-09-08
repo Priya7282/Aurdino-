@@ -1,0 +1,129 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+// WiFi credentials
+const char* ssid = "Wokwi-GUEST";  // Wokwi simulation default WiFi
+const char* password = "";
+
+// MQTT broker
+const char* mqtt_server = "broker.hivemq.com"; // Free MQTT broker
+const int mqtt_port = 1883;
+const char* mqtt_topic = "esp32/leds";  // Topic to subscribe
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// 8 LED pins
+int ledPins[8] = {13, 12, 14, 27, 26, 25, 33, 32};
+
+// Function prototypes
+void setup_wifi();
+void callback(char* topic, byte* message, unsigned int length);
+void reconnect();
+void turnAllOn();
+void turnAllOff();
+void chaseEffect();
+void blinkEffect();
+
+void setup() {
+  Serial.begin(115200);
+
+  // Setup LED pins
+  for (int i = 0; i < 8; i++) {
+    pinMode(ledPins[i], OUTPUT);
+    digitalWrite(ledPins[i], LOW);
+  }
+
+  setup_wifi();
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+}
+
+void loop() {
+  if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+}
+
+// WiFi connect
+void setup_wifi() {
+  delay(10);
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi connected!");
+}
+
+// MQTT message callback
+void callback(char* topic, byte* message, unsigned int length) {
+  String command = "";
+  for (int i = 0; i < length; i++) {
+    command += (char)message[i];
+  }
+  command.trim();
+  Serial.println("Received command: " + command);
+
+  if (command == "ON_ALL") {
+    turnAllOn();
+  } else if (command == "OFF_ALL") {
+    turnAllOff();
+  } else if (command == "CHASE") {
+    chaseEffect();
+  } else if (command == "BLINK") {
+    blinkEffect();
+  }
+}
+
+// Reconnect to MQTT
+void reconnect() {
+  while (!client.connected()) {
+    Serial.print("Connecting to MQTT...");
+    if (client.connect("ESP32Client")) {
+      Serial.println("connected!");
+      client.subscribe(mqtt_topic);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" retrying...");
+      delay(2000);
+    }
+  }
+}
+
+// LED Functions
+void turnAllOn() {
+  for (int i = 0; i < 8; i++) {
+    digitalWrite(ledPins[i], HIGH);
+  }
+}
+
+void turnAllOff() {
+  for (int i = 0; i < 8; i++) {
+    digitalWrite(ledPins[i], LOW);
+  }
+}
+
+void chaseEffect() {
+  for (int i = 0; i < 8; i++) {
+    digitalWrite(ledPins[i], HIGH);
+    delay(200);
+    digitalWrite(ledPins[i], LOW);
+  }
+}
+
+void blinkEffect() {
+  for (int j = 0; j < 5; j++) { // blink 5 times
+    for (int i = 0; i < 8; i++) {
+      digitalWrite(ledPins[i], HIGH);
+    }
+    delay(300);
+    for (int i = 0; i < 8; i++) {
+      digitalWrite(ledPins[i], LOW);
+    }
+    delay(300);
+  }
+}
