@@ -21,7 +21,7 @@ Different commands are published to the broker, and the ESP32 responds with LED 
 
 ## Simulation
 You can test this project on **Wokwi**:  
-👉 [Wokwi ESP32 Simulation Link](https://wokwi.com/) (insert your project link here after saving)
+https://wokwi.com/projects/441609021052593153
 
 ## Repository Contents
 - `main.ino` → ESP32 source code
